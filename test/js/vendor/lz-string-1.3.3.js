@@ -52,6 +52,16 @@ var LZString = {
         enc4 = 64;
       }
       
+//      console.log('-------'+i+'-------');
+//      console.log(chr1);
+//      console.log(chr2);
+//      console.log(chr3);
+//      console.log('-');
+//      console.log(enc1+" = "+LZString._keyStr.charAt(enc1));
+//      console.log(enc2+" = "+LZString._keyStr.charAt(enc2));
+//      console.log(enc3+" = "+LZString._keyStr.charAt(enc3));
+//      console.log(enc4+" = "+LZString._keyStr.charAt(enc4));
+      
       output = output +
         LZString._keyStr.charAt(enc1) + LZString._keyStr.charAt(enc2) +
           LZString._keyStr.charAt(enc3) + LZString._keyStr.charAt(enc4);

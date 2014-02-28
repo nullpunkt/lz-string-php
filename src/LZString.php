@@ -120,12 +120,12 @@ class LZString {
         $enc4 = 'NaN';
         $input = self::compress($input);
         $i=0;
-            
-        while($i < (mb_strlen($input, 'UTF-8')*2)) {
+        $strlen = mb_strlen($input, 'UTF-8');
+        while($i < ($strlen*2)) {
             if($i%2===0) {
                 $chr1 = self::charCodeAt($input, $i/2) >> 8;
                 $chr2 = self::charCodeAt($input, $i/2) & 255;
-                if(($i/2)+1 < mb_strlen($input)) {
+                if(($i/2)+1 < $strlen) {
                     $chr3 = self::charCodeAt($input, ($i/2)+1) >> 8;
                 }
                 else {
@@ -134,7 +134,7 @@ class LZString {
             } 
             else {
                 $chr1 = self::charCodeAt($input, ($i-1)/2) & 255;
-                if(($i+1)/2 < mb_strlen($input)) {
+                if(($i+1)/2 < $strlen) {
                     $chr2 = self::charCodeAt($input, ($i+1)/2) >> 8;
                     $chr3 = self::charCodeAt($input, ($i+1)/2) & 255;
                 } else  {
@@ -143,14 +143,12 @@ class LZString {
                 }
             }
             $i+=3;
+            
             $enc1 = $chr1 >> 2;
             $enc2 = (($chr1 & 3) << 4) | ($chr2 >> 4);
             $enc3 = (($chr2 & 15) << 2) | ($chr3 >> 6);
             $enc4 = $chr3 & 63;
             
-            
-//            var_dump(array($chr1, $chr2, $chr3));
-      
             if($chr2==='NaN') {
                 $enc3 = 64;
                 $enc4 = 64;
@@ -158,10 +156,17 @@ class LZString {
                 $enc4 = 64;
             }
             
-//            var_dump($enc1 . ' = ' . self::$keyStr{$enc1});
-//            var_dump($enc2 . ' = ' . self::$keyStr{$enc2});
-//            var_dump($enc3 . ' = ' . self::$keyStr{$enc3});
-//            var_dump($enc4 . ' = ' . self::$keyStr{$enc4});
+//            var_dump(array(
+//                '-------'.$i.'-------',
+//                $chr1,
+//                $chr2,
+//                $chr3,
+//                '-',
+//                $enc1 . ' = ' . self::$keyStr{$enc1},
+//                $enc2 . ' = ' . self::$keyStr{$enc2},
+//                $enc3 . ' = ' . self::$keyStr{$enc3},
+//                $enc4 . ' = ' . self::$keyStr{$enc4}
+//            ));
             
             $output = $output . self::$keyStr{$enc1} . self::$keyStr{$enc2} .
                 self::$keyStr{$enc3} . self::$keyStr{$enc4};
@@ -250,8 +255,7 @@ class LZString {
         $data->position = 32768;
         $data->index = 1;
 
-        $next = self::readBits(2, $data);
-        switch($next) {
+        switch(self::readBits(2, $data)) {
            case 0: 
                $c = self::fromCharCode(self::readBits(8, $data));
                break;
@@ -288,8 +292,8 @@ class LZString {
                 $enlargeIn = pow(2, $numBits);
                 $numBits++;
             }
-
-            if(array_key_exists($c, $dictionary) && $dictionary[$c]) {
+            
+            if(array_key_exists($c, $dictionary) && $dictionary[$c] !== FALSE) {
                 $entry = $dictionary[$c];
             } 
             else {
@@ -297,13 +301,14 @@ class LZString {
                     $entry = $w + $w{0};
                 } 
                 else {
+                    throw new Exception('$c != $dictSize ('.$c.','.$dictSize.')');
                     return null;
                 }
             }
             $result .= $entry;
       
             // Add w+entry[0] to the dictionary.
-            $dictionary[$dictSize++] = $w + $entry{0};
+            $dictionary[$dictSize++] = $w . $entry{0};
             $enlargeIn--;
       
             $w = $entry;
