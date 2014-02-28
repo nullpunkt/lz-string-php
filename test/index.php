@@ -1,22 +1,19 @@
 <?php
 require_once '../src/LZString.php';
 
+$rows = 5;
+$digits = 5;
 $set = array();
-$items = array('A', 'B', 'C', 'D', 'E', 'F');
-$skip = 100;
-$max = 1;
-foreach($items as $a) {
-    foreach($items as $b) {
-        foreach($items as $c) {
-            foreach($items as $d) {
-                if($skip-->0)continue;
-                if(!(count($set)<$max))
-                    continue;
-                $set[] = $a.$b.$c.$d;
-            }   
-        }   
-    }    
+for($i=0;$i<$rows;$i++) {
+    $str = '';
+    for($j=0;$j<$digits;$j++)
+        $str.=LZString::utf8_chr(rand(34,123));
+    $set[] = $str;
 }
+//$set = array(1,2,3,4,5,6,7,8,9);
+//$set = array('fqYW{');
+//$set = array('/L>[s');
+//$set = array('9~cSh');
 ?>
 
 <!DOCTYPE html>
@@ -55,14 +52,12 @@ foreach($items as $a) {
             <div class="row">
                 <div class="col-lg-6">
                     <h2>compress</h2>
-                    <table class="table table-striped">
+                    <table class="table table-striped table-condensed">
                         <thead>
                             <tr>
                                 <th>Value</th>
                                 <th>PHP</th>
                                 <th>JS</th>
-                                <th>md5(PHP)</th>
-                                <th>md5(JS)</th>
                                 <th>MATCH</th>
                             </tr>
                         </thead>
@@ -74,56 +69,177 @@ foreach($items as $a) {
                                             <td class="value">'.$value.'</td>
                                             <td class="PHP">'.LZString::compress($value).'</td>
                                             <td class="JS"></td>
-                                            <td class="JSMD5"></td>
-                                            <td>4</td>
+                                            <td class="equals"></td>
                                         </tr>
                                     ';
                                 }
-//                                            <td class="PHPMD5">'.substr(md5(LZString::compress($value)), 0, 4).'</td>
                             ?>
                         </tbody>
                     </table>
                 </div>
                 <div class="col-lg-6">
                     <h2>compressToBase64</h2>
-                    <table class="table table-striped">
+                    <table class="table table-striped table-condensed">
                         <thead>
                             <tr>
                                 <th>Value</th>
                                 <th>PHP</th>
                                 <th>JS</th>
-                                <th>md5(PHP)</th>
-                                <th>md5(JS)</th>
                                 <th>MATCH</th>
                             </tr>
                         </thead>
                         <tbody class="compressToBase64">
                             <?php
-//                                foreach($set as $value) {
-//                                    echo '
-//                                        <tr>
-//                                            <td class="value">'.$value.'</td>
-//                                            <td class="PHP">'.LZString::compressToBase64($value).'</td>
-//                                            <td class="JS"></td>
-//                                            <td class="PHPMD5">'.substr(md5(LZString::compressToBase64($value)), 0, 4).'</td>
-//                                            <td class="JSMD5"></td>
-//                                            <td>4</td>
-//                                        </tr>
-//                                    ';
-//                                }
+                                foreach($set as $value) {
+                                    echo '
+                                        <tr>
+                                            <td class="value">'.$value.'</td>
+                                            <td class="PHP">'.LZString::compressToBase64($value).'</td>
+                                            <td class="JS"></td>
+                                            <td class="equals"></td>
+                                        </tr>
+                                    ';
+                                }
                             ?>
                         </tbody>
                     </table>
                 </div>
                 <hr>
             </div>
+            <div class="row">
+                <div class="col-lg-6">
+                    <h2>decompress</h2>
+                    <table class="table table-striped table-condensed">
+                        <thead>
+                            <tr>
+                                <th>Value</th>
+                                <th>Compressed</th>
+                                <th>PHP</th>
+                                <th>JS</th>
+                                <th>MATCH</th>
+                            </tr>
+                        </thead>
+                        <tbody class="decompress">
+                            <?php
+                                foreach($set as $value) {
+                                    echo '
+                                        <tr>
+                                            <td class="value">'.$value.'</td>
+                                            <td class="compressed">'.LZString::compress($value).'</td>
+                                            <td class="PHP">'.LZString::decompress(LZString::compress($value)).'</td>
+                                            <td class="JS"></td>
+                                            <td class="equals"></td>
+                                        </tr>
+                                    ';
+                                }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-lg-6">
+                    <h2>decompressFromBase64</h2>
+                    <table class="table table-striped table-condensed">
+                        <thead>
+                            <tr>
+                                <th>Value</th>
+                                <th>Compressed</th>
+                                <th>PHP</th>
+                                <th>JS</th>
+                                <th>MATCH</th>
+                            </tr>
+                        </thead>
+                        <tbody class="decompressFromBase64">
+                            <?php
+                                foreach($set as $value) {
+                                    echo '
+                                        <tr>
+                                            <td class="value">'.$value.'</td>
+                                            <td class="compressed">'.LZString::compressToBase64($value).'</td>
+                                            <td class="PHP">'.LZString::decompressFromBase64(LZString::compressToBase64($value)).'</td>
+                                            <td class="JS"></td>
+                                            <td class="equals"></td>
+                                        </tr>
+                                    ';
+                                }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+                <hr>
+            </div>
+            <div class="row">
+                <div class="col-lg-6">
+                    <h2>php/js fromCharCode</h2>
+                    <table class="table table-striped table-condensed">
+                        <thead>
+                            <tr>
+                                <th>Number</th>
+                                <th>PHP</th>
+                                <th>PHPLength</th>
+                                <th>JS</th>
+                                <th>JSLength</th>
+                                <th>Match</th>
+                            </tr>
+                        </thead>
+                        <tbody class="fromCharCode">
+                            <?php
+                                for($i=0; $i<10; $i++) {
+                                    $j = rand(0, 100000);
+                                    $fromCharCode = LZString::fromCharCode($j);
+                                    echo '
+                                        <tr>
+                                            <td class="value">'.$j.'</td>
+                                            <td class="PHP">'.$fromCharCode.'</td>
+                                            <td class="PHPL">'.mb_strlen($fromCharCode, 'UTF-8').'</td>
+                                            <td class="JS"></td>
+                                            <td class="JSL"></td>
+                                            <td class="equals"></td>
+                                            <td class="equalsL"></td>
+                                        </tr>
+                                    ';
+                                }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-lg-6">
+                    <h2>php fromCharCode/charCodeAt</h2>
+                    <table class="table table-striped table-condensed">
+                        <thead>
+                            <tr>
+                                <th>Number</th>
+                                <th>fromCharCode</th>
+                                <th>charCodeAt</th>
+                                <th>Match</th>
+                            </tr>
+                        </thead>
+                        <tbody class="phpFromCharCode">
+                            <?php
+                                for($i=0; $i<10; $i++) {
+                                    $j = rand(0, 100000);
+                                    $fromCharCode = LZString::fromCharCode($j);
+                                    $charCodeAt = LZString::charCodeAt($fromCharCode, 0);
+                                    echo '
+                                        <tr>
+                                            <td class="NUMBER">'.$j.'</td>
+                                            <td class="fromCharCode">'.$fromCharCode.'</td>
+                                            <td class="charCodeAt">'.$charCodeAt.'</td>
+                                            <td class="equals '.($j===$charCodeAt ? 'success' : 'danger').'">'.($j===$charCodeAt ? 'true' : 'false').'</td>
+                                        </tr>
+                                    ';
+                                }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
 
         </div> <!-- /container -->        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.10.1.min.js"><\/script>')</script>
         <script src="js/vendor/bootstrap.min.js"></script>
-        <!--<script src="js/vendor/lz-string-1.3.3.js"></script>-->
-        <script src="js/vendor/lz-string-1.0.2.js"></script>
+        <script src="js/vendor/lz-string-1.3.3.js"></script>
+        <!--<script src="js/vendor/lz-string-1.0.2.js"></script>-->
         <script src="js/vendor/md5.js"></script>
         <script src="js/main.js"></script>
 

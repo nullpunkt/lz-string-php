@@ -296,7 +296,6 @@ var LZString = {
     
     for (ii = 0; ii < uncompressed.length; ii += 1) {
       context_c = uncompressed.charAt(ii);
-      
       if (!Object.prototype.hasOwnProperty.call(context_dictionary,context_c)) {
         context_dictionary[context_c] = context_dictSize++;
         context_dictionaryToCreate[context_c] = true;

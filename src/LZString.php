@@ -21,7 +21,7 @@ class LZContext {
 }
 
 class LZData {
-    public $string;
+    public $str;
     public $val;
     public $position = 0;
     public $index = 1;
@@ -29,10 +29,18 @@ class LZData {
 
 class LZString {
     
-    private static function charCodeAt($str, $num) { 
-        
-//        return ord(substr($str, $num, 1));
-        
+    private static $keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    
+    public static function fromCharCode() {
+        $args = func_get_args();
+        return array_reduce(func_get_args(),function($a,$b){$a.=self::utf8_chr($b);return $a;});
+    }
+    
+    public static function utf8_chr($u) {
+        return mb_convert_encoding('&#' . intval($u) . ';', 'UTF-8', 'HTML-ENTITIES');
+    }
+    
+    public static function charCodeAt($str, $num) { 
         return self::utf8_ord(self::utf8_charAt($str, $num)); 
     }
     
@@ -56,7 +64,7 @@ class LZString {
         $data->val = ($data->val << 1) | $value;
         if($data->position == 15) {
             $data->position = 0;
-            $data->str .= chr($data->val);
+            $data->str .= self::fromCharCode($data->val);
             $data->val = 0;
         }
         else {
@@ -101,11 +109,69 @@ class LZString {
         return $context;    
     }
     
-    public static function compressToBase64($uncompressed) {
-        return base64_encode(self::compress($uncompressed));
+    public static function compressToBase64($input) {
+        $output = '';
+        $chr1 = 'NaN';
+        $chr2 = 'NaN';
+        $chr3 = 'NaN';
+        $enc1 = 'NaN';
+        $enc2 = 'NaN';
+        $enc3 = 'NaN';
+        $enc4 = 'NaN';
+        $input = self::compress($input);
+        $i=0;
+            
+        while($i < (mb_strlen($input, 'UTF-8')*2)) {
+            if($i%2===0) {
+                $chr1 = self::charCodeAt($input, $i/2) >> 8;
+                $chr2 = self::charCodeAt($input, $i/2) & 255;
+                if(($i/2)+1 < mb_strlen($input)) {
+                    $chr3 = self::charCodeAt($input, ($i/2)+1) >> 8;
+                }
+                else {
+                    $chr3 = 'NaN';
+                }
+            } 
+            else {
+                $chr1 = self::charCodeAt($input, ($i-1)/2) & 255;
+                if(($i+1)/2 < mb_strlen($input)) {
+                    $chr2 = self::charCodeAt($input, ($i+1)/2) >> 8;
+                    $chr3 = self::charCodeAt($input, ($i+1)/2) & 255;
+                } else  {
+                    $chr2 = 'NaN';
+                    $chr3 = 'NaN';
+                }
+            }
+            $i+=3;
+            $enc1 = $chr1 >> 2;
+            $enc2 = (($chr1 & 3) << 4) | ($chr2 >> 4);
+            $enc3 = (($chr2 & 15) << 2) | ($chr3 >> 6);
+            $enc4 = $chr3 & 63;
+            
+            
+//            var_dump(array($chr1, $chr2, $chr3));
+      
+            if($chr2==='NaN') {
+                $enc3 = 64;
+                $enc4 = 64;
+            } else if ($chr3==='NaN' || $chr3===0) {
+                $enc4 = 64;
+            }
+            
+//            var_dump($enc1 . ' = ' . self::$keyStr{$enc1});
+//            var_dump($enc2 . ' = ' . self::$keyStr{$enc2});
+//            var_dump($enc3 . ' = ' . self::$keyStr{$enc3});
+//            var_dump($enc4 . ' = ' . self::$keyStr{$enc4});
+            
+            $output = $output . self::$keyStr{$enc1} . self::$keyStr{$enc2} .
+                self::$keyStr{$enc3} . self::$keyStr{$enc4};
+        }
+    
+        return $output;
     }
     
     public static function compress($uncompressed) {
+        $uncompressed = ''.$uncompressed;
         $context = new LZContext();
         for($i = 0; $i < strlen($uncompressed); $i++) {
             $context->c = $uncompressed{$i};
@@ -142,23 +208,19 @@ class LZString {
     private static function readBit(LZData $data) {
         $res = $data->val & $data->position;
         $data->position >>= 1;
-        if($data->position === 0) {
+        if($data->position == 0) {
             $data->position = 32768;
-            // This 'if' check doesn't appear in the orginal lz-string javascript code->
-            // Added as a check to make sure we don't exceed the length of data->str
-            // The javascript charCodeAt will return a NaN if it exceeds the index but will not error out
-            if($data->index < strlen($data->str)) {
-                $data->val = $data->str[$data->index++]; // data->val = data->string->charCodeAt(data->index++); <---javascript equivilant
-            }
+            $data->val = self::charCodeAt($data->str, $data->index++);
         }
-        return $res > 0 ? 1 : 0;
+        //data.val = (data.val << 1);
+        return $res>0 ? 1 : 0;
     }
     
     private static function readBits($numBits, LZData $data) {
         $res = 0;
         $maxpower = pow(2, $numBits);
         $power = 1;
-        while($power !== $maxpower) {
+        while($power != $maxpower) {
             $res |= self::readBit($data) * $power;
             $power <<= 1;
         }
@@ -166,87 +228,140 @@ class LZString {
     }
     
      public static function decompress($compressed) {
-
-        $data = new LZData();
-        $dictionary = array("0", "1", "2");
-        $next = 0;
+        $dictionary = array(
+            0 => 0,
+            1 => 1,
+            2 => 2
+        );
+        $next = NULL;
         $enlargeIn = 4;
+        $dictSize = 4;
         $numBits = 3;
         $entry = '';
         $result = '';
-        $i = 0;
-        $w = '';
-        $c = '';
+        $w = NULL;
+        $c = NULL;
         $errorCount = 0;
-        $data->string = $compressed;
-        $data->val = (int)$compressed{0};
+        $literal = NULL;
+        $data = new LZData;
+        
+        $data->str = $compressed;
+        $data->val = self::charCodeAt($compressed, 0);
         $data->position = 32768;
         $data->index = 1;
 
         $next = self::readBits(2, $data);
         switch($next) {
-            case 0:
-                $c = chr(self::readBits(8, $data));
-                break;
-            case 1:
-                $c = chr(self::readBits(16, data));
-                break;
-            case 2:
-                return '';
+           case 0: 
+               $c = self::fromCharCode(self::readBits(8, $data));
+               break;
+           case 1: 
+               $c = self::fromCharCode(self::readBits(16, $data));
+               break;
+           case 2: 
+               return '';
         }
-        
-        $dictionary[] = $c;
+        $dictionary[3] = $c;
         $w = $result = $c;
-                
         while(true) {
             $c = self::readBits($numBits, $data);
-            $cc = (int)$c;
-
-            switch($cc) {
-                case 0:
-                    if($errorCount++ > 10000)
-                        throw new Exception("To many errors");
-                    $c = chr(self::readBits(8, $data));
-                    $dictionary[] = $c;
-                    $c = count($dictionary) - 1;
+            switch($c) {
+                case 0: 
+                    if ($errorCount++ > 10000) 
+                        throw new Exception('Too much errors.');
+                    $c = self::fromCharCode(self::readBits(8, $data));
+                    $dictionary[$dictSize++] = $c;
+                    $c = $dictSize-1;
                     $enlargeIn--;
                     break;
-                case 1:
-                    $c = chr(self::readBits(16, $data));
-                    $dictionary[] = $c;
-                    $c = count($dictionary) - 1;
+                case 1: 
+                    $c = self::fromCharCode(self::readBits(16, $data));
+                    $dictionary[$dictSize++] = $c;
+                    $c = $dictSize-1;
                     $enlargeIn--;
                     break;
-                case 2:
+                case 2: 
                     return $result;
             }
-
+      
             if($enlargeIn === 0) {
                 $enlargeIn = pow(2, $numBits);
                 $numBits++;
             }
 
-            if(array_key_exists($c, $dictionary) && $dictionary[$c] !== NULL) { // if (dictionary[c] ) <------- original Javascript Equivalant
+            if(array_key_exists($c, $dictionary) && $dictionary[$c]) {
                 $entry = $dictionary[$c];
-            }
+            } 
             else {
-                if($c === count($dictionary)) {
-                    $entry = $w . $w{0};
-                }
+                if($c === $dictSize) {
+                    $entry = $w + $w{0};
+                } 
                 else {
-                    return NULL;
+                    return null;
                 }
             }
-
             $result .= $entry;
-            $dictionary[] = $w . $entry{0};
+      
+            // Add w+entry[0] to the dictionary.
+            $dictionary[$dictSize++] = $w + $entry{0};
             $enlargeIn--;
+      
             $w = $entry;
-
-            if($enlargeIn === 0) {
+      
+            if($enlargeIn == 0) {
                 $enlargeIn = pow(2, $numBits);
-                    $numBits++;
+                $numBits++;
+            }
+        }
+        return $result;
+     }
+     
+     
+    public static function decompressFromBase64($input) {
+        $output = '';
+        $ol = 0;
+        $output_ = NULL;
+        $chr1 = NULL;
+        $chr2 = NULL;
+        $chr3 = NULL;
+        $enc1 = NULL;
+        $enc2 = NULL;
+        $enc3 = NULL;
+        $enc4 = NULL;
+        $input = preg_replace('/[^A-Za-z0-9\+\/\=]/', '', $input);
+        
+        $i=0;
+        while($i < mb_strlen($input)) {
+            
+            $enc1 = strpos(self::$keyStr, $input{$i++});
+            $enc2 = strpos(self::$keyStr, $input{$i++});
+            $enc3 = strpos(self::$keyStr, $input{$i++});
+            $enc4 = strpos(self::$keyStr, $input{$i++});
+            
+            $chr1 = ($enc1 << 2) | ($enc2 >> 4);
+            $chr2 = (($enc2 & 15) << 4) | ($enc3 >> 2);
+            $chr3 = (($enc3 & 3) << 6) | $enc4;
+            
+            if($ol%2==0) {
+                $output_ = $chr1 << 8;
+                if($enc3 != 64) {
+                    $output .= self::fromCharCode($output_ | $chr2);
+                }
+                if($enc4 != 64) {
+                    $output_ = $chr3 << 8;
+                }
+            } 
+            else {
+                $output = $output . self::fromCharCode($output_ | $chr1);
+                if($enc3 != 64) {
+                    $output_ = $chr2 << 8;
+                }
+                if($enc4 != 64) {
+                    $output .= self::fromCharCode($output_ | $chr3);
                 }
             }
-     }
+            $ol+=3;
+        }
+        return self::decompress($output);
+    }
 }

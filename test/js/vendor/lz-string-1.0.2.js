@@ -82,6 +82,7 @@ var LZString = {
         context.w = String(context.c);
       }
     }
+    
     // Output the code for w.
     if (context.w !== "") {
       this.produceW(context);
@@ -90,10 +91,8 @@ var LZString = {
     // Mark the end of the stream
     this.writeBits(context.numBits, 2, context.data);
     
-    
     // Flush the last char
     while (context.data.val>0) this.writeBit(0,context.data)
-    console.log(context);
     return context.data.string;
   },
   
