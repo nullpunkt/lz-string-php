@@ -4,12 +4,15 @@ require_once '../src/LZString.php';
 $rows = 5;
 $digits = 5;
 $set = array();
-for($i=0;$i<$rows;$i++) {
+for ($i = 0; $i < $rows; $i++) {
     $str = '';
-    for($j=0;$j<$digits;$j++)
-        $str.=LZString::utf8_chr(rand(34,123));
+    for ($j = 0; $j < $digits; $j++)
+        $str.=LZString::utf8_chr(rand(34, 123));
     $set[] = $str;
 }
+$test = array_key_exists('testString', $_POST) ? $_POST['testString'] : 'Test this text';
+$testPHP = LZString::compressToBase64($test);
+
 //$set = array(1,2,3,4,5,6,7,8,9);
 //$set = array('fqYW{');
 //$set = array('/L>[s');
@@ -48,6 +51,42 @@ for($i=0;$i<$rows;$i++) {
 
         <div class="container">
             <hr>
+            <div class="row">
+                <div class="col-lg-4">
+                    <h2>Test String</h2>
+                    <form class="form-inline" role="form" method="POST">
+                        <div class="form-group">
+                            <label class="sr-only" for="testString">String to Test</label>
+                            <input class="form-control" name="testString" style="width: 300px;" id="testString" placeholder="String to Test" value="<?php echo $test; ?>">
+                        </div>
+                        <button type="submit" class="btn btn-default">Test</button>
+                    </form>
+                </div>
+                <div class="col-lg-8">
+                    <h2>Result</h2>
+                    <div class="row">
+                        <div class="col-lg-3">
+                            PHP compressToBase64
+                        </div>
+                        <div class="col-lg-5">
+                            <code id="testCompressToBase64PHP">
+                                <?php echo $testPHP; ?>
+                            </code>
+                        </div>    
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-lg-3">
+                            JS compressToBase64
+                        </div>
+                        <div class="col-lg-5">
+                            <code id="testCompressToBase64JS">
+                            </code>
+                        </div>    
+                    </div>
+                </div>
+            </div>
+
             <!-- Example row of columns -->
             <div class="row">
                 <div class="col-lg-6">
@@ -63,16 +102,16 @@ for($i=0;$i<$rows;$i++) {
                         </thead>
                         <tbody class="compress">
                             <?php
-                                foreach($set as $value) {
-                                    echo '
+                            foreach ($set as $value) {
+                                echo '
                                         <tr>
-                                            <td class="value">'.$value.'</td>
-                                            <td class="PHP">'.LZString::compress($value).'</td>
+                                            <td class="value">' . $value . '</td>
+                                            <td class="PHP">' . LZString::compress($value) . '</td>
                                             <td class="JS"></td>
                                             <td class="equals"></td>
                                         </tr>
                                     ';
-                                }
+                            }
                             ?>
                         </tbody>
                     </table>
@@ -90,16 +129,16 @@ for($i=0;$i<$rows;$i++) {
                         </thead>
                         <tbody class="compressToBase64">
                             <?php
-                                foreach($set as $value) {
-                                    echo '
+                            foreach ($set as $value) {
+                                echo '
                                         <tr>
-                                            <td class="value">'.$value.'</td>
-                                            <td class="PHP">'.LZString::compressToBase64($value).'</td>
+                                            <td class="value">' . $value . '</td>
+                                            <td class="PHP">' . LZString::compressToBase64($value) . '</td>
                                             <td class="JS"></td>
                                             <td class="equals"></td>
                                         </tr>
                                     ';
-                                }
+                            }
                             ?>
                         </tbody>
                     </table>
@@ -121,17 +160,17 @@ for($i=0;$i<$rows;$i++) {
                         </thead>
                         <tbody class="decompress">
                             <?php
-                                foreach($set as $value) {
-                                    echo '
+                            foreach ($set as $value) {
+                                echo '
                                         <tr>
-                                            <td class="value">'.$value.'</td>
-                                            <td class="compressed">'.LZString::compress($value).'</td>
-                                            <td class="PHP">'.LZString::decompress(LZString::compress($value)).'</td>
+                                            <td class="value">' . $value . '</td>
+                                            <td class="compressed">' . LZString::compress($value) . '</td>
+                                            <td class="PHP">' . LZString::decompress(LZString::compress($value)) . '</td>
                                             <td class="JS"></td>
                                             <td class="equals"></td>
                                         </tr>
                                     ';
-                                }
+                            }
                             ?>
                         </tbody>
                     </table>
@@ -150,17 +189,17 @@ for($i=0;$i<$rows;$i++) {
                         </thead>
                         <tbody class="decompressFromBase64">
                             <?php
-                                foreach($set as $value) {
-                                    echo '
+                            foreach ($set as $value) {
+                                echo '
                                         <tr>
-                                            <td class="value">'.$value.'</td>
-                                            <td class="compressed">'.LZString::compressToBase64($value).'</td>
-                                            <td class="PHP">'.LZString::decompressFromBase64(LZString::compressToBase64($value)).'</td>
+                                            <td class="value">' . $value . '</td>
+                                            <td class="compressed">' . LZString::compressToBase64($value) . '</td>
+                                            <td class="PHP">' . LZString::decompressFromBase64(LZString::compressToBase64($value)) . '</td>
                                             <td class="JS"></td>
                                             <td class="equals"></td>
                                         </tr>
                                     ';
-                                }
+                            }
                             ?>
                         </tbody>
                     </table>
@@ -183,21 +222,21 @@ for($i=0;$i<$rows;$i++) {
                         </thead>
                         <tbody class="fromCharCode">
                             <?php
-                                for($i=0; $i<10; $i++) {
-                                    $j = rand(0, 100000);
-                                    $fromCharCode = LZString::fromCharCode($j);
-                                    echo '
+                            for ($i = 0; $i < 10; $i++) {
+                                $j = rand(0, 100000);
+                                $fromCharCode = LZString::fromCharCode($j);
+                                echo '
                                         <tr>
-                                            <td class="value">'.$j.'</td>
-                                            <td class="PHP">'.$fromCharCode.'</td>
-                                            <td class="PHPL">'.mb_strlen($fromCharCode, 'UTF-8').'</td>
+                                            <td class="value">' . $j . '</td>
+                                            <td class="PHP">' . $fromCharCode . '</td>
+                                            <td class="PHPL">' . mb_strlen($fromCharCode, 'UTF-8') . '</td>
                                             <td class="JS"></td>
                                             <td class="JSL"></td>
                                             <td class="equals"></td>
                                             <td class="equalsL"></td>
                                         </tr>
                                     ';
-                                }
+                            }
                             ?>
                         </tbody>
                     </table>
@@ -215,19 +254,19 @@ for($i=0;$i<$rows;$i++) {
                         </thead>
                         <tbody class="phpFromCharCode">
                             <?php
-                                for($i=0; $i<10; $i++) {
-                                    $j = rand(0, 100000);
-                                    $fromCharCode = LZString::fromCharCode($j);
-                                    $charCodeAt = LZString::charCodeAt($fromCharCode, 0);
-                                    echo '
+                            for ($i = 0; $i < 10; $i++) {
+                                $j = rand(0, 100000);
+                                $fromCharCode = LZString::fromCharCode($j);
+                                $charCodeAt = LZString::charCodeAt($fromCharCode, 0);
+                                echo '
                                         <tr>
-                                            <td class="NUMBER">'.$j.'</td>
-                                            <td class="fromCharCode">'.$fromCharCode.'</td>
-                                            <td class="charCodeAt">'.$charCodeAt.'</td>
-                                            <td class="equals '.($j===$charCodeAt ? 'success' : 'danger').'">'.($j===$charCodeAt ? 'true' : 'false').'</td>
+                                            <td class="NUMBER">' . $j . '</td>
+                                            <td class="fromCharCode">' . $fromCharCode . '</td>
+                                            <td class="charCodeAt">' . $charCodeAt . '</td>
+                                            <td class="equals ' . ($j === $charCodeAt ? 'success' : 'danger') . '">' . ($j === $charCodeAt ? 'true' : 'false') . '</td>
                                         </tr>
                                     ';
-                                }
+                            }
                             ?>
                         </tbody>
                     </table>

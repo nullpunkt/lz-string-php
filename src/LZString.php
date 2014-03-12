@@ -152,7 +152,7 @@ class LZString {
             if($chr2==='NaN') {
                 $enc3 = 64;
                 $enc4 = 64;
-            } else if ($chr3==='NaN' || $chr3===0) {
+            } else if ($chr3==='NaN') {
                 $enc4 = 64;
             }
             

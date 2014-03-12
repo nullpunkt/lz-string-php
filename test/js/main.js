@@ -45,6 +45,7 @@ $(function() {
             console.log(js);
         }
     });
+    $('#testCompressToBase64JS').html(LZString.compressToBase64($('#testString').val()));
 });
 
 function htmlDecode(input){
