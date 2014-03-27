@@ -46,6 +46,7 @@ $(function() {
         }
     });
     $('#testCompressToBase64JS').html(LZString.compressToBase64($('#testString').val()));
+    $('#testDecompressFromBase64JS').html(LZString.decompressFromBase64($('#testCompressToBase64PHP').html()));
 });
 
 function htmlDecode(input){

@@ -1,6 +1,7 @@
 <?php
 require_once '../src/LZString.php';
 
+$codeChecks = 10;
 $rows = 5;
 $digits = 5;
 $set = array();
@@ -12,7 +13,11 @@ for ($i = 0; $i < $rows; $i++) {
 }
 $test = array_key_exists('testString', $_POST) ? $_POST['testString'] : 'Test this text';
 $testPHP = LZString::compressToBase64($test);
+//$testPHP = 'IoDQKgcgIgogsgBgErAWhBGIAAA=';
+$testPHPdec = LZString::decompressFromBase64($testPHP);
 
+$codeChecks = 10;
+//$set = array();
 //$set = array(1,2,3,4,5,6,7,8,9);
 //$set = array('fqYW{');
 //$set = array('/L>[s');
@@ -65,10 +70,10 @@ $testPHP = LZString::compressToBase64($test);
                 <div class="col-lg-8">
                     <h2>Result</h2>
                     <div class="row">
-                        <div class="col-lg-3">
+                        <div class="col-lg-4">
                             PHP compressToBase64
                         </div>
-                        <div class="col-lg-5">
+                        <div class="col-lg-4">
                             <code id="testCompressToBase64PHP">
                                 <?php echo $testPHP; ?>
                             </code>
@@ -76,11 +81,32 @@ $testPHP = LZString::compressToBase64($test);
                     </div>
                     
                     <div class="row">
-                        <div class="col-lg-3">
+                        <div class="col-lg-4">
                             JS compressToBase64
                         </div>
-                        <div class="col-lg-5">
+                        <div class="col-lg-4">
                             <code id="testCompressToBase64JS">
+                            </code>
+                        </div>    
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-lg-4">
+                            PHP decompressFromBase64
+                        </div>
+                        <div class="col-lg-4">
+                            <code id="testCompressToBase64PHP">
+                                <?php echo $testPHPdec; ?>
+                            </code>
+                        </div>    
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-lg-4">
+                            JS decompressFromBase64
+                        </div>
+                        <div class="col-lg-4">
+                            <code id="testDecompressFromBase64JS">
                             </code>
                         </div>    
                     </div>
@@ -222,7 +248,7 @@ $testPHP = LZString::compressToBase64($test);
                         </thead>
                         <tbody class="fromCharCode">
                             <?php
-                            for ($i = 0; $i < 10; $i++) {
+                            for ($i = 0; $i < $codeChecks; $i++) {
                                 $j = rand(0, 100000);
                                 $fromCharCode = LZString::fromCharCode($j);
                                 echo '
@@ -254,7 +280,7 @@ $testPHP = LZString::compressToBase64($test);
                         </thead>
                         <tbody class="phpFromCharCode">
                             <?php
-                            for ($i = 0; $i < 10; $i++) {
+                            for ($i = 0; $i < $codeChecks; $i++) {
                                 $j = rand(0, 100000);
                                 $fromCharCode = LZString::fromCharCode($j);
                                 $charCodeAt = LZString::charCodeAt($fromCharCode, 0);

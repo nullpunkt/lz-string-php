@@ -12,7 +12,10 @@ var LZString = {
   
   // private property
   _keyStr : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-  _f : String.fromCharCode,
+  _f : function(x) {
+//      console.log(x+": "+String.fromCharCode(x));
+      return String.fromCharCode(x);
+  },
   
   compressToBase64 : function (input) {
     if (input == null) return "";
@@ -23,6 +26,8 @@ var LZString = {
     input = LZString.compress(input);
     
     while (i < input.length*2) {
+      
+//        console.log('-------'+i+'<'+(input.length*2)+'-------');
       
       if (i%2==0) {
         chr1 = input.charCodeAt(i/2) >> 8;
@@ -52,7 +57,7 @@ var LZString = {
         enc4 = 64;
       }
       
-//      console.log('-------'+i+'-------');
+      
 //      console.log(chr1);
 //      console.log(chr2);
 //      console.log(chr3);
@@ -495,7 +500,9 @@ var LZString = {
     
     // Flush the last char
     while (true) {
+//      console.log('1: '+context_data_val+' '+ context_data_position);
       context_data_val = (context_data_val << 1);
+//      console.log('2: '+context_data_val+' '+ context_data_position);
       if (context_data_position == 15) {
         context_data_string += f(context_data_val);
         break;
@@ -596,7 +603,6 @@ var LZString = {
         bits |= (resb>0 ? 1 : 0) * power;
         power <<= 1;
       }
-
       switch (c = bits) {
         case 0: 
           bits = 0;
@@ -655,8 +661,11 @@ var LZString = {
       }
       result += entry;
       
+//      console.log(result);
+      
       // Add w+entry[0] to the dictionary.
       dictionary[dictSize++] = w + entry.charAt(0);
+//      console.log(dictionary);
       enlargeIn--;
       
       w = entry;

@@ -33,6 +33,7 @@ class LZString {
     
     public static function fromCharCode() {
         $args = func_get_args();
+//        var_dump($args[0].': '.array_reduce(func_get_args(),function($a,$b){$a.=self::utf8_chr($b);return $a;}));
         return array_reduce(func_get_args(),function($a,$b){$a.=self::utf8_chr($b);return $a;});
     }
     
@@ -122,6 +123,9 @@ class LZString {
         $i=0;
         $strlen = mb_strlen($input, 'UTF-8');
         while($i < ($strlen*2)) {
+            
+//            var_dump('-------'.$i.'<'.($strlen*2).'-------');
+            
             if($i%2===0) {
                 $chr1 = self::charCodeAt($input, $i/2) >> 8;
                 $chr2 = self::charCodeAt($input, $i/2) & 255;
@@ -157,7 +161,6 @@ class LZString {
             }
             
 //            var_dump(array(
-//                '-------'.$i.'-------',
 //                $chr1,
 //                $chr2,
 //                $chr3,
@@ -178,6 +181,7 @@ class LZString {
     public static function compress($uncompressed) {
         $uncompressed = ''.$uncompressed;
         $context = new LZContext();
+        
         for($i = 0; $i < strlen($uncompressed); $i++) {
             $context->c = $uncompressed{$i};
             
@@ -200,12 +204,17 @@ class LZString {
            self::produceW($context);
         }
 
-        self::writeBits($context->numBits, 2,$context->data);
+        self::writeBits($context->numBits, 2, $context->data);
         
-
-        // Flush the last char
-        while($context->data->val>0)
-            self::writeBit(0, $context->data);
+        $safe = 0;
+        while(TRUE) {
+            $context->data->val = $context->data->val << 1;
+            if($context->data->position == 15) {
+                $context->data->str .= self::fromCharCode($context->data->val);
+                break;
+            }
+            $context->data->position++;
+        }
         
         return $context->data->str;
     }
@@ -298,7 +307,7 @@ class LZString {
             } 
             else {
                 if($c === $dictSize) {
-                    $entry = $w + $w{0};
+                    $entry = $w . $w{0};
                 } 
                 else {
                     throw new Exception('$c != $dictSize ('.$c.','.$dictSize.')');
@@ -306,9 +315,10 @@ class LZString {
                 }
             }
             $result .= $entry;
-      
+            
             // Add w+entry[0] to the dictionary.
-            $dictionary[$dictSize++] = $w . $entry{0};
+            $dictionary[$dictSize++] = $w .''. $entry{0};
+            
             $enlargeIn--;
       
             $w = $entry;
