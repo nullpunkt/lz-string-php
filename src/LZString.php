@@ -38,7 +38,6 @@ class LZString {
     }
     
     public static function utf8_chr($u) {
-//        return $u;
         return mb_convert_encoding('&#' . intval($u) . ';', 'UTF-8', 'HTML-ENTITIES');
     }
     
@@ -180,8 +179,7 @@ class LZString {
     }
     
     public static function compress($uncompressed) {
-//        var_dump(mb_convert_encoding($uncompressed, 'UTF-8', mb_detect_encoding($uncompressed)));
-        $uncompressed = mb_convert_encoding($uncompressed, 'UTF-8', mb_detect_encoding($uncompressed));
+        $uncompressed = ''.$uncompressed;
         $context = new LZContext();
         
         for($i = 0; $i < strlen($uncompressed); $i++) {
