@@ -34,7 +34,7 @@ class LZString {
     public static function fromCharCode() {
         $args = func_get_args();
 //        var_dump($args[0].': '.array_reduce(func_get_args(),function($a,$b){$a.=self::utf8_chr($b);return $a;}));
-        return array_reduce(func_get_args(),function($a,$b){$a.=self::utf8_chr($b);return $a;});
+        return array_reduce(func_get_args(),function($a,$b){$a.=LZString::utf8_chr($b);return $a;});
     }
     
     public static function utf8_chr($u) {
@@ -94,11 +94,11 @@ class LZString {
         if(array_key_exists($context->w, $context->dictionaryToCreate)) {
             if(self::charCodeAt($context->w, 0) < 256) {
                 self::writeBits($context->numBits, 0, $context->data);
-                self::writeBits(8, $context->w{0}, $context->data);
+                self::writeBits(8, self::utf8_charAt($context->w, 0), $context->data);
             }
             else {
                 self::writeBits($context->numBits, 1, $context->data);
-                self::writeBits(16, $context->w{0}, $context->data);
+                self::writeBits(16, self::utf8_charAt($context->w, 0), $context->data);
             }
             self::decrementEnlargeIn($context);
             unset($context->dictionaryToCreate[$context->w]);
@@ -183,7 +183,7 @@ class LZString {
         $context = new LZContext();
         
         for($i = 0; $i < strlen($uncompressed); $i++) {
-            $context->c = $uncompressed{$i};
+            $context->c = self::utf8_charAt($uncompressed, $i);
             
             if(!array_key_exists($context->c, $context->dictionary)) {
                 $context->dictionary[$context->c] = $context->dictSize++;
@@ -307,7 +307,7 @@ class LZString {
             } 
             else {
                 if($c === $dictSize) {
-                    $entry = $w . $w{0};
+                    $entry = $w . self::utf8_charAt($w, 0);
                 } 
                 else {
                     throw new Exception('$c != $dictSize ('.$c.','.$dictSize.')');
@@ -317,7 +317,7 @@ class LZString {
             $result .= $entry;
             
             // Add w+entry[0] to the dictionary.
-            $dictionary[$dictSize++] = $w .''. $entry{0};
+            $dictionary[$dictSize++] = $w .''. self::utf8_charAt($entry, 0);
             
             $enlargeIn--;
       
