@@ -2,7 +2,7 @@
 /**
  * Description of LZString
  *
- * @author Tobias Neeb <tobias.neeb@gmail.com>
+ * @author Tobias Seipke <tobias.seipke@gmail.com>
  */
 class LZContext {
     public $dictionary = array();
@@ -31,13 +31,16 @@ class LZString {
     
     private static $keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     
-    public static function fromCharCode() {
-        $args = func_get_args();
+    public static function fromCharCode($a) {
+        return LZString::utf8_chr($a);
+//        $args = func_get_args();
 //        var_dump($args[0].': '.array_reduce(func_get_args(),function($a,$b){$a.=self::utf8_chr($b);return $a;}));
-        return array_reduce(func_get_args(),function($a,$b){$a.=LZString::utf8_chr($b);return $a;});
+//        return array_reduce($a,function($a,$b){$a.=LZString::utf8_chr($b);return $a;});
     }
     
+    private static $map = array();
     public static function utf8_chr($u) {
+        
         return mb_convert_encoding('&#' . intval($u) . ';', 'UTF-8', 'HTML-ENTITIES');
     }
     
