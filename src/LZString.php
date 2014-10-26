@@ -31,33 +31,25 @@ class LZString {
     
     private static $keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     
-    public static function fromCharCode($a) {
-        return LZString::utf8_chr($a);
-//        $args = func_get_args();
-//        var_dump($args[0].': '.array_reduce(func_get_args(),function($a,$b){$a.=self::utf8_chr($b);return $a;}));
-//        return array_reduce($a,function($a,$b){$a.=LZString::utf8_chr($b);return $a;});
+    public static function chr($ord, $encoding='UTF-8') {
+        if($encoding==='UCS-4BE') {
+            return pack("N", $ord);
+        }else{
+            return mb_convert_encoding(self::chr($ord, 'UCS-4BE'), $encoding, 'UCS-4BE');
+        }
     }
     
-    private static $map = array();
-    public static function utf8_chr($u) {
-        
-        return mb_convert_encoding('&#' . intval($u) . ';', 'UTF-8', 'HTML-ENTITIES');
+    public static function ord($char, $encoding='UTF-8') {
+        if($encoding==='UCS-4BE') {
+            list(, $ord) = (strlen($char) === 4) ? @unpack('N', $char) : @unpack('n', $char);
+            return $ord;
+        } else {
+            return self::ord(mb_convert_encoding($char, 'UCS-4BE', $encoding), 'UCS-4BE');
+        }
     }
     
-    public static function charCodeAt($str, $num) { 
-        return self::utf8_ord(self::utf8_charAt($str, $num)); 
-    }
-    
-    private static function utf8_ord($ch) {
-        $len = strlen($ch);
-        if($len <= 0) return false;
-        $h = ord($ch{0});
-        if ($h <= 0x7F) return $h;
-        if ($h < 0xC2) return false;
-        if ($h <= 0xDF && $len>1) return ($h & 0x1F) <<  6 | (ord($ch{1}) & 0x3F);
-        if ($h <= 0xEF && $len>2) return ($h & 0x0F) << 12 | (ord($ch{1}) & 0x3F) << 6 | (ord($ch{2}) & 0x3F);          
-        if ($h <= 0xF4 && $len>3) return ($h & 0x0F) << 18 | (ord($ch{1}) & 0x3F) << 12 | (ord($ch{2}) & 0x3F) << 6 | (ord($ch{3}) & 0x3F);
-        return false;
+    public static function charCodeAt($str, $i) {
+        return self::ord(mb_substr($str, $i, 1, 'UTF-8'));
     }
     
     private static function utf8_charAt($str, $num) { 
@@ -68,7 +60,7 @@ class LZString {
         $data->val = ($data->val << 1) | $value;
         if($data->position == 15) {
             $data->position = 0;
-            $data->str .= self::fromCharCode($data->val);
+            $data->str .= self::chr($data->val);
             $data->val = 0;
         }
         else {
@@ -77,8 +69,9 @@ class LZString {
     }
     
     private static function writeBits($numbits, $value, LZData $data) {
-        if(is_string($value))
+        if(is_string($value)) {
             $value = self::charCodeAt($value, 0);
+        }
         for($i = 0; $i < $numbits; $i++) {
             self::writeBit($value & 1, $data);
             $value = $value >> 1;
@@ -213,7 +206,7 @@ class LZString {
         while(TRUE) {
             $context->data->val = $context->data->val << 1;
             if($context->data->position == 15) {
-                $context->data->str .= self::fromCharCode($context->data->val);
+                $context->data->str .= self::chr($context->data->val);
                 break;
             }
             $context->data->position++;
@@ -269,10 +262,10 @@ class LZString {
 
         switch(self::readBits(2, $data)) {
            case 0: 
-               $c = self::fromCharCode(self::readBits(8, $data));
+               $c = self::chr(self::readBits(8, $data));
                break;
            case 1: 
-               $c = self::fromCharCode(self::readBits(16, $data));
+               $c = self::chr(self::readBits(16, $data));
                break;
            case 2: 
                return '';
@@ -285,13 +278,13 @@ class LZString {
                 case 0: 
                     if ($errorCount++ > 10000) 
                         throw new Exception('Too much errors.');
-                    $c = self::fromCharCode(self::readBits(8, $data));
+                    $c = self::chr(self::readBits(8, $data));
                     $dictionary[$dictSize++] = $c;
                     $c = $dictSize-1;
                     $enlargeIn--;
                     break;
                 case 1: 
-                    $c = self::fromCharCode(self::readBits(16, $data));
+                    $c = self::chr(self::readBits(16, $data));
                     $dictionary[$dictSize++] = $c;
                     $c = $dictSize-1;
                     $enlargeIn--;
@@ -363,19 +356,19 @@ class LZString {
             if($ol%2==0) {
                 $output_ = $chr1 << 8;
                 if($enc3 != 64) {
-                    $output .= self::fromCharCode($output_ | $chr2);
+                    $output .= self::chr($output_ | $chr2);
                 }
                 if($enc4 != 64) {
                     $output_ = $chr3 << 8;
                 }
             } 
             else {
-                $output = $output . self::fromCharCode($output_ | $chr1);
+                $output = $output . self::chr($output_ | $chr1);
                 if($enc3 != 64) {
                     $output_ = $chr2 << 8;
                 }
                 if($enc4 != 64) {
-                    $output .= self::fromCharCode($output_ | $chr3);
+                    $output .= self::chr($output_ | $chr3);
                 }
             }
             $ol+=3;
