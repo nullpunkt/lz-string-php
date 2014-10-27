@@ -9,7 +9,7 @@ class LZContext {
     public $enlargeIn = 2;
     public $dictSize = 3;
     public $numBits = 2;
-    public $result = '';
+    public $data = NULL;
     
     function __construct() {
         $this->data = new LZData;
@@ -17,13 +17,182 @@ class LZContext {
 }
 
 class LZData {
-    public $string;
-    public $val;
+    public $string = '';
+    public $val = 0;
     public $position = 0;
+    
+    function writeBit($value=NULL) {
+        if($value===NULL) {
+            $this->val = ($this->val << 1);
+        } else {
+            $this->val = ($this->val << 1) | $value;
+        }
+        if($this->position===15) {
+            $this->position = 0;
+            $this->string .= pack("L", $this->val);
+            $this->val = 0;
+        } else {
+            $this->position++;
+        }
+    }
+    
+    function flush() {
+        while(TRUE) {
+            $this->val = $this->val<<1;
+            if($this->position>=15) {
+                $this->string .= pack("L", $this->val);
+                return;
+            } else {
+                $this->position++;
+            }
+        }
+    }
 }
 
 
 class LZString {
+    
+    public static function decrementEnlargeIn(LZContext $context) {
+        $context->enlargeIn--;
+        if($context->enlargeIn===0) {
+            $context->enlargeIn = pow(2, $context->numBits);
+            $context->numBits++;
+        }
+    }
+    
+    static function produceW(LZContext $context) {
+        $ord = array_reduce(unpack('C*', mb_substr($context->w, 0, 1)), function($carry, $item) {
+            $carry += $item;
+            return $carry;
+        });
+        if(array_key_exists($context->w, $context->dictionaryToCreate)) {
+            if($ord<256) {
+                for($i=0; $i<$context->numBits; $i++) {
+                    $context->data->writeBit();
+                }
+                $value = $ord;
+                for($i=0; $i<8; $i++) {
+                    $context->data->writeBit($value&1);
+                    $value = $value >> 1;
+                }
+            } else {
+                $value = 1;
+                for($i=0; $i<$context->numBits; $i++) {
+                    $context->data->writeBit($value);
+                    $value = 0;
+                }
+                $value = $ord;
+                for($i=0; $i<16; $i++) {
+                    $context->data->writeBit($value&1);
+                    $value = $value >> 1;
+                }
+            }
+            self::decrementEnlargeIn($context);
+            unset($context->dictionaryToCreate[$context->w]);
+        } else {
+            $value = $context->dictionary[$context->w];
+            for($i=0; $i<$context->numBits; $i++) {
+                $context->data->writeBit($value&1);
+                $value = $value >> 1;
+            }
+        }
+    }
+    
+    static function compress($uncompressed) {
+        $context = new LZContext;
+        for($i=0; $i<mb_strlen($uncompressed); $i++) {
+            $context->c = mb_substr($uncompressed, $i, 1);
+            if(!array_key_exists($context->c, $context->dictionary)) {
+                $context->dictionary[$context->c] = $context->dictSize++;
+                $context->dictionaryToCreate[$context->c] = TRUE;
+            }
+            $context->wc = $context->w . $context->c;
+            if(array_key_exists($context->wc, $context->dictionary)) {
+                $context->w = $context->wc;
+            } else {
+                self::produceW($context);
+                self::decrementEnlargeIn($context);
+                $context->dictionary[$context->wc] = $context->dictSize++;
+                $context->w = $context->c;
+            }
+        }
+        $ord = array_reduce(unpack('C*', mb_substr($context->w, 0, 1)), function($carry, $item) {
+            $carry += $item;
+            return $carry;
+        });
+        if($context->w!=='') {
+            self::produceW($context, $ord);
+        }
+        $value = 2;
+        for($i=0; $i<$context->numBits; $i++) {
+            $context->data->writeBit($value&1);
+            $value = $value >> 1;
+        }
+        $context->data->flush();
+        return $context->data->string;
+    }
+    
+    public static function compressToBase64($input) {
+        return LZBase64::compress(self::compress($input));
+    }
+    
+    public static function decompressFromBase64($input) {
+        $output = '';
+        $ol = 0;
+        $output_ = NULL;
+        $chr1 = NULL;
+        $chr2 = NULL;
+        $chr3 = NULL;
+        $enc1 = NULL;
+        $enc2 = NULL;
+        $enc3 = NULL;
+        $enc4 = NULL;
+        $input = preg_replace('/[^A-Za-z0-9\+\/\=]/', '', $input);
+        $i=0;
+        while($i < mb_strlen($input)) {
+            
+            $enc1 = strpos(self::$keyStr, $input{$i++});
+            $enc2 = strpos(self::$keyStr, $input{$i++});
+            $enc3 = strpos(self::$keyStr, $input{$i++});
+            $enc4 = strpos(self::$keyStr, $input{$i++});
+            
+            $chr1 = ($enc1 << 2) | ($enc2 >> 4);
+            $chr2 = (($enc2 & 15) << 4) | ($enc3 >> 2);
+            $chr3 = (($enc3 & 3) << 6) | $enc4;
+            
+            if($ol%2==0) {
+                $output_ = $chr1 << 8;
+                if($enc3 != 64) {
+                    $output .= self::chr($output_ | $chr2);
+                }
+                if($enc4 != 64) {
+                    $output_ = $chr3 << 8;
+                }
+            } 
+            else {
+                $output = $output . self::chr($output_ | $chr1);
+                if($enc3 != 64) {
+                    $output_ = $chr2 << 8;
+                }
+                if($enc4 != 64) {
+                    $output .= self::chr($output_ | $chr3);
+                }
+            }
+            $ol+=3;
+        }
+        return self::decompress($output);
+    }
+}
+
+class LZUTF8 {
+    public static function charCodeAt($str, $i) {
+        list(, $ord) = unpack('N', mb_convert_encoding(self::charAt($str, $i), 'UCS-4BE', 'UTF-8'));
+        return $ord;
+    }
+    
+    public static function charAt($str, $i) {
+        return mb_substr($str, $i, 1, 'UTF-8');
+    }
     
     public static function chr($ord, $encoding='UTF-8') {
         if($encoding==='UCS-4BE') {
@@ -32,135 +201,97 @@ class LZString {
             return mb_convert_encoding(self::chr($ord, 'UCS-4BE'), $encoding, 'UCS-4BE');
         }
     }
+}
+
+class LZBase64 {
     
-    public static function ord($char, $encoding='UTF-8') {
-        if($encoding==='UCS-4BE') {
-            list(, $ord) = (strlen($char) === 4) ? @unpack('N', $char) : @unpack('n', $char);
-            return $ord;
-        } else {
-            return self::ord(mb_convert_encoding($char, 'UCS-4BE', $encoding), 'UCS-4BE');
-        }
-    }
+    private static $keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     
-    public static function charCodeAt($str, $i) {
-        return self::ord(mb_substr($str, $i, 1, 'UTF-8'));
-    }
-    
-//    private static function ord($ch) {
-//        list(, $ord) = unpack('N', mb_convert_encoding($ch, 'UTF-16', 'UTF-8'));
-//        return $ord;
-//        
-//        $len = strlen($ch);
-//        if($len <= 0) return false;
-//        $h = ord($ch{0});
-//        if ($h <= 0x7F) return $h;
-//        if ($h < 0xC2) return false;
-//        if ($h <= 0xDF && $len>1) return ($h & 0x1F) <<  6 | (ord($ch{1}) & 0x3F);
-//        if ($h <= 0xEF && $len>2) return ($h & 0x0F) << 12 | (ord($ch{1}) & 0x3F) << 6 | (ord($ch{2}) & 0x3F);          
-//        if ($h <= 0xF4 && $len>3) return ($h & 0x0F) << 18 | (ord($ch{1}) & 0x3F) << 12 | (ord($ch{2}) & 0x3F) << 6 | (ord($ch{3}) & 0x3F);
-//        return false;
-//    }
-    
-    static function produceW(LZContext $context) {
-        if(array_key_exists($context->w, $context->dictionaryToCreate)) {
-//            if(self::charCodeAt($context->w, 0)<256) {
-//                self::writeBits()
-//            }
-        }
-//        
-//         if (Object.prototype.hasOwnProperty.call(context.dictionaryToCreate,context.w)) {
-//            if (context.w.charCodeAt(0)<256) {
-//            this.writeBits(context.numBits, 0, context.data);
-//            this.writeBits(8, context.w, context.data);
-//            } else {
-//            this.writeBits(context.numBits, 1, context.data);
-//            this.writeBits(16, context.w, context.data);
-//            }
-//            this.decrementEnlargeIn(context);
-//            delete context.dictionaryToCreate[context.w];
-//        } else {
-//        this.writeBits(context.numBits, context.dictionary[context.w], context.data);
-//        }
-//        this.decrementEnlargeIn(context);
-    }
-    
-    static function compress($uncompressed) {
-        $context = new LZContext;
-//        echo $uncompressed;
-//        $unc = unpack("C*", $uncompressed);
-        for($i=0;$i<mb_strlen($uncompressed, 'UTF-8');$i++) {
-            $context->c = charCodeAt($uncompressed, $i, 1);
-            if(!array_key_exists($context->c, $context->dictionary)) {
-                $context->dictionary[$context->c] = $context->dictSize++;
-                $context->dictionaryToCreate[$context->c] = true;
+    static function compress($input) {
+        $output = '';
+        $chr = array('NaN', 'NaN', 'NaN');
+        $enc = array('NaN', 'NaN', 'NaN', 'NaN');
+        $i=0;
+        $strlen = mb_strlen($input, 'UTF-8');
+        while($i < ($strlen*2)) {
+            if($i%2===0) {
+                $chr[0] = LZUTF8::charCodeAt($input, $i/2) >> 8;
+                $chr[1] = LZUTF8::charCodeAt($input, $i/2) & 255;
+                if(($i/2)+1 < $strlen) {
+                    $chr[2] = LZUTF8::charCodeAt($input, ($i/2)+1) >> 8;
+                }
+                else {
+                    $chr[2] = 'NaN';
+                }
+            } 
+            else {
+                $chr[0] = LZUTF8::charCodeAt($input, ($i-1)/2) & 255;
+                if(($i+1)/2 < $strlen) {
+                    $chr[1] = LZUTF8::charCodeAt($input, ($i+1)/2) >> 8;
+                    $chr[2] = LZUTF8::charCodeAt($input, ($i+1)/2) & 255;
+                } else  {
+                    $chr[1] = 'NaN';
+                    $chr[2] = 'NaN';
+                }
             }
-            $context->wc = $context->w.$context->c;
-            if(array_key_exists($context->wc, $context->dictionary)) {
-                $context->w = $context->wc;
-            } else {
-                self::produceW($context);
+            $i+=3;
+            $enc[0] = $chr[0] >> 2;
+            $enc[1] = (($chr[0] & 3) << 4) | ($chr[1] >> 4);
+            $enc[2] = (($chr[1] & 15) << 2) | ($chr[2] >> 6);
+            $enc[3] = $chr[2] & 63;
+            if($chr[1]==='NaN') {
+                $enc[2] = 64;
+                $enc[3] = 64;
+            } else if ($chr[2]==='NaN') {
+                $enc[3] = 64;
             }
+            $output = $output 
+            .self::$keyStr{$enc[0]} 
+            .self::$keyStr{$enc[1]} 
+            .self::$keyStr{$enc[2]} 
+            .self::$keyStr{$enc[3]}
+            ;
+        }
+        return $output;
+    }
+    
+    public static function uncompress($input) {
+        $output = ''; $ol = 0; $output_ = NULL; $i=0;
+        $input = preg_replace('/[^A-Za-z0-9\+\/\=]/', '', $input);
+        while($i < strlen($input)) {
             
+            $enc = array(
+                strpos(self::$keyStr, $input{$i++}),
+                strpos(self::$keyStr, $input{$i++}),
+                strpos(self::$keyStr, $input{$i++}),
+                strpos(self::$keyStr, $input{$i++})
+            );
+            $chr = array(
+                ($enc[0] << 2) | ($enc[1] >> 4),
+                (($enc[1] & 15) << 4) | ($enc[2] >> 2),
+                (($enc[2] & 3) << 6) | $enc[3]
+            );
+            
+            if($ol%2==0) {
+                $output_ = $chr[0] << 8;
+                if($enc[2] != 64) {
+                    $output .= LZUTF8::chr($output_ | $chr[1]);
+                }
+                if($enc[3] != 64) {
+                    $output_ = $chr[2] << 8;
+                }
+            } 
+            else {
+                $output = $output . LZUTF8::chr($output_ | $chr[0]);
+                if($enc[2] != 64) {
+                    $output_ = $chr[1] << 8;
+                }
+                if($enc[3] != 64) {
+                    $output .= LZUTF8::chr($output_ | $chr[2]);
+                }
+            }
+            $ol+=3;
         }
-        
-//        $context = new LZContext;
-//        for($i=0; $i<count($unc); $i++) {
-////            var_dump(array_merge(array('C*'), array_slice($unc, $i, 2)));
-//            $context->c = pack('C*', array_slice($unc, $i, 1));
-//            if(!array_key_exists($context->c, $context->dictionary)) {
-//                $context->dictionary[$context->c] = $context->dictSize++;
-//                $context->dictionaryToCreate[$context->c] = true;
-//            }
-//            $context->wc = $context->w.$context->c;
-//            if(array_key_exists($context->wc, $context->dictionary)) {
-//                $context->w = $context->wc;
-//            } else {
-//                self::produceW($context);
-//            }
-//        echo '--->'.$context->c."\n";
-//        }
-        
-//        
-//        context.wc = context.w + context.c;
-//        if (Object.prototype.hasOwnProperty.call(context.dictionary,context.wc)) {
-//        context.w = context.wc;
-//        } else {
-//        this.produceW(context);
-//        // Add wc to the dictionary.
-//        context.dictionary[context.wc] = context.dictSize++;
-//        context.w = String(context.c);
-//        }
-//        }
-//        // Output the code for w.
-//        if (context.w !== "") {
-//        this.produceW(context);
-//        }
-//        // Mark the end of the stream
-//        this.writeBits(context.numBits, 2, context.data);
-//        // Flush the last char
-//        while (context.data.val>0) this.writeBit(0,context.data)
-//        return context.data.string;
-//        },
-//        readBit : function(data) {
-//        var res = data.val & data.position;
-//        data.position >>= 1;
-//        if (data.position == 0) {
-//        data.position = 32768;
-//        data.val = data.string.charCodeAt(data.index++);
-//        }
-//        //data.val = (data.val << 1);
-//        return res>0 ? 1 : 0;
-//        },
-//        readBits : function(numBits, data) {
-//        var res = 0;
-//        var maxpower = Math.pow(2,numBits);
-//        var power=1;
-//        while (power!=maxpower) {
-//        res |= this.readBit(data) * power;
-//        power <<= 1;
-//        }
-//        return res;
-//        },
-        
+        return $output;
     }
 }

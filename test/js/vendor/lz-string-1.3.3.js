@@ -14,13 +14,14 @@ var LZString = {
   _keyStr : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
   _f : String.fromCharCode,
   
-  compressToBase64 : function (input) {
+  compressToBase64 : function (input, cprs) {
     if (input == null) return "";
     var output = "";
     var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
     var i = 0;
     
-    input = LZString.compress(input);
+    if(typeof cprs === 'undefined' || cprs===true)
+        input = LZString.compress(input);
     
     while (i < input.length*2) {
       
