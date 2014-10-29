@@ -184,6 +184,10 @@ class LZString {
     }
 }
 
+class LZByteString {
+    
+}
+
 class LZUTF8 {
     public static function charCodeAt($str, $i) {
         list(, $ord) = unpack('N', mb_convert_encoding(self::charAt($str, $i), 'UCS-4BE', 'UTF-8'));
@@ -201,6 +205,7 @@ class LZUTF8 {
             return mb_convert_encoding(self::chr($ord, 'UCS-4BE'), $encoding, 'UCS-4BE');
         }
     }
+    
 }
 
 class LZBase64 {

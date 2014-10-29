@@ -18,7 +18,36 @@ var lzstring = angular.module('lzstring', [])
             $scope.compare.compressToBase64.phpu = data.wu;
         });
     });
-        
+    
+    $scope.generated = [];
+    
+    $scope.generateBase64encode = function() {
+        var words = generateWords(100, 10, 2);
+        $scope.generated.length = 0;
+        for(var i=0; i<words.length; i++) {
+            $scope.generated.push({
+                word: words[i],
+                gen: LZString.compressToBase64(words[i], false)
+            });
+        }
+        console.log($scope.generated);
+    };
+    
+    function generateWords(count, length, bytes) {
+        var ret = [];
+        for(var i=0; i<count; i++) {
+            var tmp = '';
+            for(var j=0; j<length; j++) {
+                var ord = 0;
+                for(var k=0; k<bytes; k++) {
+                    ord += parseInt(Math.random()*256)
+                };
+                tmp += String.fromCharCode(ord);
+            }
+            ret.push(tmp);
+        }
+        return ret;
+    }
 })
 
 ;
