@@ -1,5 +1,4 @@
 <?php
-
 namespace LZCompressor;
 
 class LZString
@@ -22,8 +21,9 @@ class LZString
     }
 
     /**
-     * @param string $u
+     * Phps chr() equivalent for UTF-8 encoding
      *
+     * @param int|string $u
      * @return string
      */
     public static function utf8_chr($u)
