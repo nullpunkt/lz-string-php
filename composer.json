@@ -1,5 +1,5 @@
 {
-  "name": "juhasz-adam/lz-compressor",
+  "name": "nullpunkt/lz-string-php",
   "description": "PHP Class implementation of LZ-String javascript.",
   "require": {
     "php": ">=5.3.0"
