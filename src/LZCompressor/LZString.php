@@ -150,13 +150,13 @@ class LZString
     public static function compressToBase64($input)
     {
         $output = '';
-        $chr1 = 'NaN';
-        $chr2 = 'NaN';
-        $chr3 = 'NaN';
-        $enc1 = 'NaN';
-        $enc2 = 'NaN';
-        $enc3 = 'NaN';
-        $enc4 = 'NaN';
+        $chr1 = NAN;
+        $chr2 = NAN;
+        $chr3 = NAN;
+        $enc1 = NAN;
+        $enc2 = NAN;
+        $enc3 = NAN;
+        $enc4 = NAN;
         $input = self::compress($input);
         $i = 0;
         $strlen = mb_strlen($input, 'UTF-8');
@@ -167,7 +167,7 @@ class LZString
                 if (($i / 2) + 1 < $strlen) {
                     $chr3 = self::charCodeAt($input, ($i / 2) + 1) >> 8;
                 } else {
-                    $chr3 = 'NaN';
+                    $chr3 = NAN;
                 }
             } else {
                 $chr1 = self::charCodeAt($input, ($i - 1) / 2) & 255;
@@ -175,8 +175,8 @@ class LZString
                     $chr2 = self::charCodeAt($input, ($i + 1) / 2) >> 8;
                     $chr3 = self::charCodeAt($input, ($i + 1) / 2) & 255;
                 } else {
-                    $chr2 = 'NaN';
-                    $chr3 = 'NaN';
+                    $chr2 = NAN;
+                    $chr3 = NAN;
                 }
             }
             $i += 3;
@@ -186,14 +186,25 @@ class LZString
             $enc3 = (($chr2 & 15) << 2) | ($chr3 >> 6);
             $enc4 = $chr3 & 63;
 
-            if ($chr2 === 'NaN') {
+            if ($chr2 === NAN) {
                 $enc3 = 64;
                 $enc4 = 64;
-            } else if ($chr3 === 'NaN') {
+            } else if ($chr3 === NAN) {
                 $enc4 = 64;
             }
 
             $output = $output . self::$keyStr{$enc1} . self::$keyStr{$enc2} . self::$keyStr{$enc3} . self::$keyStr{$enc4};
+        }
+
+        switch (strlen($output) % 4) {
+            case 0 :
+                break;
+            case 1 :
+                $output .= "==="; break;
+            case 2 :
+                $output .= "=="; break;
+            case 3 :
+                $output .= "="; break;
         }
 
         return $output;
@@ -232,7 +243,6 @@ class LZString
 
         self::writeBits($context->numBits, 2, $context->data);
 
-        $safe = 0;
         while (true) {
             $context->data->val = $context->data->val << 1;
             if ($context->data->position == 15) {
