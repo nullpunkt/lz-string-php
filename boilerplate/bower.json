@@ -16,6 +16,10 @@
     "tests"
   ],
   "dependencies": {
-    "lz-string": "~1.4.4"
+    "lz-string": "~1.4.4",
+    "bootstrap": "~3.3.6",
+    "angular": "angularjs#~1.5.0",
+    "moment": "~2.11.2",
+    "javascript-md5": "~2.3.0"
   }
 }

@@ -4,31 +4,22 @@ use LZCompressor\LZString as LZString;
 
 class TestLZString extends PHPUnit_Framework_TestCase
 {
-//    /**
-//     * @dataProvider oneByteProvider
-//     * @param $test
-//     * @throws Exception
-//     */
-//    public function testUTF8_1Byte($test) {
-//        $this->assertEquals($test, LZString::decompress(LZString::compress($test)));
-//    }
-//
-//    /**
-//     * @dataProvider twoBytesProvider
-//     * @param $test
-//     * @throws Exception
-//     */
-//    public function testUTF8_2Bytes($test) {
-//        $this->assertEquals($test, LZString::decompress(LZString::compress($test)));
-//    }
-
     /**
-     * @dataProvider oneByteProvider
+     * @dataProvider simpleTextProvider
      * @param $test
      * @throws Exception
      */
-    public function testBase64_1Byte($test) {
-        $this->assertEquals($test, LZString::decompressFromBase64(LZString::compressToBase64($test)));
+    public function testSimple($test) {
+        $this->assertEquals($test, LZString::decompress(LZString::compress($test)));
+    }
+
+    /**
+     * @dataProvider simpleTextProvider
+     * @param $test
+     * @throws Exception
+     */
+    public function testUTF8_1Byte($test) {
+        $this->assertEquals($test, LZString::decompress(LZString::compress($test)));
     }
 
     /**
@@ -36,32 +27,78 @@ class TestLZString extends PHPUnit_Framework_TestCase
      * @param $test
      * @throws Exception
      */
-    public function testBase64_2Bytes($test) {
-        $this->assertEquals($test, LZString::decompressFromBase64(LZString::compressToBase64($test)));
+    public function testUTF8_2Bytes($test) {
+        $this->assertEquals($test, LZString::decompress(LZString::compress($test)));
+    }
+
+    /**
+     * @dataProvider threeBytesProvider
+     * @param $test
+     * @throws Exception
+     */
+    public function testUTF8_3Bytes($test) {
+        $this->assertEquals($test, LZString::decompress(LZString::compress($test)));
+    }
+
+    /**
+     * @dataProvider compressed64Provider
+     * @param $input
+     * @param $expected
+     */
+    public function testDecompressFromBase64($input, $expected) {
+        $this->assertEquals($expected, LZString::decompressFromBase64($input));
+    }
+
+    public function simpleTextProvider() {
+        return [
+            ['a'],
+            ['A'],
+            ['Aa'],
+            ['AA'],
+            ['ӪӹĆĹ߅œƠيϼϾ'],
+            ['Ӫӹ'],
+            ['AAAAAA']
+        ];
     }
 
     public function oneByteProvider() {
         return $this->byteProvider(1, 1000, 1000);
-//        return $this->byteProvider(1, 1, 100);
     }
 
     public function twoBytesProvider() {
-        return $this->byteProvider(2, 1000, 500);
-//        return $this->byteProvider(2, 1, 500);
+        return $this->byteProvider(2, 500, 500);
+    }
+
+    public function threeBytesProvider() {
+        return $this->byteProvider(3, 500, 100);
     }
 
     private function byteProvider($byteCnt, $count, $length) {
-        $start = pow(2, (($byteCnt-1)*8))-1;
-        $end = pow(2, ($byteCnt*8)-1);
+        $domain = array(
+            1 => array(0, 127),
+            2 => array(128, 2014),
+            3 => array(2048, 65535)
+        );
+        $start = $domain[$byteCnt][0];
+        $end = $domain[$byteCnt][1];
         $testCases = [];
+        $rands = [];
         for($i=0; $i<$count; $i++) {
             $test = '';
             for($j=0; $j<$length; $j++) {
-                $test .= LZString::utf8_chr(rand($start, $end));
+                $rand = rand($start, $end);
+                $rands[] = $rand;
+                $test .= \LZCompressor\LZUtil::utf8_chr($rand);
             }
             $testCases[] = array($test);
         }
         return $testCases;
     }
 
+    public function compressed64Provider() {
+        return [
+            ['BISwNABA7gFghgFwAYGcIFcAOBCIA===', 'Hi, what`s up!'],
+            ['BpA=', 'X']
+        ];
+    }
 }

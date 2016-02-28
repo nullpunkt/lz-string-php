@@ -6,7 +6,7 @@ class LZData
     /**
      * @var
      */
-    public $str;
+    public $str = '';
 
     /**
      * @var
@@ -22,4 +22,8 @@ class LZData
      * @var int
      */
     public $index = 1;
+
+    public function append($str) {
+        $this->str .= $str;
+    }
 }

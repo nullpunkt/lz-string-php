@@ -29,6 +29,9 @@
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary" data-ng-click="vm.encode()">Encode!</button>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <input id="display-compressed" type="checkbox" class="form-control" data-ng-model="vm.displayCompressed">
+                <label for="display-compressed">Display Compressed Bytes</label>
             </form>
         </div>
         <br>
@@ -36,36 +39,50 @@
         <hr>
         <br>
         <div class="col-md-12">
-
             <table class="table table-condensed">
                 <thead>
                 <tr>
                     <th>Source</th>
-                    <th>Compressed Base64 (JS)<br>Compressed Base64 (PHP)</th>
-                    <th>Decompressed Base64 (JS)<br>Decompressed Base64 (PHP)</th>
+                    <th data-ng-show="vm.displayCompressed">Compressed</th>
+                    <th data-ng-show="vm.displayCompressed">Compressed [Bytes]</th>
+                    <th>Compressed64</th>
+                    <th>Decompressed</th>
+                    <th>Decompressed64</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr data-ng-repeat="row in vm.results | orderBy:'$index':true">
                     <td data-ng-bind="row.input"></td>
-                    <td ng-class="{warning: row.compressed64!=row.compressed64php}">
-                        <div data-ng-bind="row.compressed64"></div>
-                        <div data-ng-bind="row.compressed64php"></div>
+                    <td data-ng-show="vm.displayCompressed" ng-class="{warning: row.compressed!=row.php.compressed}">
+                        <div data-ng-bind="row.compressed"></div>
+                        <div data-ng-bind="row.php.compressed"></div>
                     </td>
-                    <td ng-class="{warning: row.decompressed64!=row.decompressed64php}">
+                    <td data-ng-show="vm.displayCompressed" ng-class="{warning: row.compressedBytesString!=row.php.compressedBytesString}">
+                        <div data-ng-bind="row.compressedBytesString"></div>
+                        <div data-ng-bind="row.php.compressedBytesString"></div>
+                    </td>
+                    <td ng-class="{warning: row.compressed64!=row.php.compressed64}">
+                        <div data-ng-bind="row.compressed64"></div>
+                        <div data-ng-bind="row.php.compressed64"></div>
+                    </td>
+                    <td ng-class="{warning: row.decompressed!=row.php.decompressed}">
+                        <div data-ng-bind="row.decompressed"></div>
+                        <div data-ng-bind="row.php.decompressed"></div>
+                    </td>
+                    <td ng-class="{warning: row.decompressed64!=row.php.decompressed64}">
                         <div data-ng-bind="row.decompressed64"></div>
-                        <div data-ng-bind="row.decompressed64php"></div>
+                        <div data-ng-bind="row.php.decompressed64"></div>
                     </td>
                 </tr>
                 </tbody>
             </table>
-
         </div>
     </div>
 </div>
 
 <script src="bower_components/angular/angular.min.js"></script>
-<script src="bower_components/lz-string/libs/lz-string.min.js"></script>
+<script src="bower_components/lz-string/libs/lz-string.js"></script>
+<!--<script src="bower_components/lz-string/libs/lz-string.min.js"></script>-->
 <script src="main.js"></script>
 </body>
 </html>

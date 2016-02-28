@@ -52,4 +52,40 @@ class LZContext
     {
         $this->data = new LZData;
     }
+
+    // Helper
+
+    /**
+     * @param string $val
+     * @return bool
+     */
+    public function dictionaryContains($val) {
+        return array_key_exists($val, $this->dictionary);
+    }
+
+    /**
+     * @param $val
+     */
+    public function addToDictionary($val) {
+        $this->dictionary[$val] = $this->dictSize++;
+    }
+
+    /**
+     * @param string $val
+     * @return bool
+     */
+    public function dictionaryToCreateContains($val) {
+        return array_key_exists($val, $this->dictionaryToCreate);
+    }
+
+    /**
+     * decrements enlargeIn and extends numbits in case enlargeIn drops to 0
+     */
+    public function enlargeIn() {
+        $this->enlargeIn--;
+        if($this->enlargeIn==0) {
+            $this->enlargeIn = pow(2, $this->numBits);
+            $this->numBits++;
+        }
+    }
 }
