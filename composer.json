@@ -15,9 +15,9 @@
     "description": "PHP Class implementation of LZ-String javascript.",
     "require": {
         "php": ">=5.3.0",
-        "monolog/monolog": "^1.17"
     },
     "require-dev": {
+        "monolog/monolog": "^1.17",
         "phpunit/phpunit": "~5.1"
     },
     "autoload": {
