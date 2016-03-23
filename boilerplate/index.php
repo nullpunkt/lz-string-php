@@ -15,7 +15,6 @@
         }
     </style>
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap-theme.min.css">
-
 </head>
 <body>
 
@@ -30,52 +29,86 @@
                 </div>
                 <button type="submit" class="btn btn-primary" data-ng-click="vm.encode()">Encode!</button>
                 &nbsp;&nbsp;&nbsp;&nbsp;
-                <input id="display-compressed" type="checkbox" class="form-control" data-ng-model="vm.displayCompressed">
-                <label for="display-compressed">Display Compressed Bytes</label>
+                <span data-ng-if="vm.activeTab == 'compress64'">
+                    <input id="display-compressed" type="checkbox" class="form-control" data-ng-model="vm.displayCompressed">
+                    <label for="display-compressed">Display Compressed Bytes</label>
+                </span>
             </form>
         </div>
         <br>
         <br>
-        <hr>
         <br>
-        <div class="col-md-12">
-            <table class="table table-condensed">
-                <thead>
-                <tr>
-                    <th>Source</th>
-                    <th data-ng-show="vm.displayCompressed">Compressed</th>
-                    <th data-ng-show="vm.displayCompressed">Compressed [Bytes]</th>
-                    <th>Compressed64</th>
-                    <th>Decompressed</th>
-                    <th>Decompressed64</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr data-ng-repeat="row in vm.results | orderBy:'$index':true">
-                    <td data-ng-bind="row.input"></td>
-                    <td data-ng-show="vm.displayCompressed" ng-class="{warning: row.compressed!=row.php.compressed}">
-                        <div data-ng-bind="row.compressed"></div>
-                        <div data-ng-bind="row.php.compressed"></div>
-                    </td>
-                    <td data-ng-show="vm.displayCompressed" ng-class="{warning: row.compressedBytesString!=row.php.compressedBytesString}">
-                        <div data-ng-bind="row.compressedBytesString"></div>
-                        <div data-ng-bind="row.php.compressedBytesString"></div>
-                    </td>
-                    <td ng-class="{warning: row.compressed64!=row.php.compressed64}">
-                        <div data-ng-bind="row.compressed64"></div>
-                        <div data-ng-bind="row.php.compressed64"></div>
-                    </td>
-                    <td ng-class="{warning: row.decompressed!=row.php.decompressed}">
-                        <div data-ng-bind="row.decompressed"></div>
-                        <div data-ng-bind="row.php.decompressed"></div>
-                    </td>
-                    <td ng-class="{warning: row.decompressed64!=row.php.decompressed64}">
-                        <div data-ng-bind="row.decompressed64"></div>
-                        <div data-ng-bind="row.php.decompressed64"></div>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+        <ul class="nav nav-tabs">
+            <li data-ng-class="{active: (vm.activeTab == 'compress64')}"><a href data-ng-click="vm.activeTab = 'compress64'">Compressed64</a></li>
+            <li data-ng-class="{active: (vm.activeTab == 'utf16')}"><a href data-ng-click="vm.activeTab = 'utf16'">UTF-16</a></li>
+        </ul>
+        <br>
+        <div data-ng-if="vm.activeTab == 'compress64'">
+            <div class="col-md-12">
+                <table class="table table-condensed">
+                    <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th data-ng-show="vm.displayCompressed">Compressed</th>
+                        <th data-ng-show="vm.displayCompressed">Compressed [Bytes]</th>
+                        <th>Compressed64</th>
+                        <th>Decompressed</th>
+                        <th>Decompressed64</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr data-ng-repeat="row in vm.results | orderBy:'$index':true">
+                        <td data-ng-bind="row.input"></td>
+                        <td data-ng-show="vm.displayCompressed" ng-class="{warning: row.compressed!=row.php.compressed}">
+                            <div data-ng-bind="row.compressed"></div>
+                            <div data-ng-bind="row.php.compressed"></div>
+                        </td>
+                        <td data-ng-show="vm.displayCompressed" ng-class="{warning: row.compressedBytesString!=row.php.compressedBytesString}">
+                            <div data-ng-bind="row.compressedBytesString"></div>
+                            <div data-ng-bind="row.php.compressedBytesString"></div>
+                        </td>
+                        <td ng-class="{warning: row.compressed64!=row.php.compressed64}">
+                            <div data-ng-bind="row.compressed64"></div>
+                            <div data-ng-bind="row.php.compressed64"></div>
+                        </td>
+                        <td ng-class="{warning: row.decompressed!=row.php.decompressed}">
+                            <div data-ng-bind="row.decompressed"></div>
+                            <div data-ng-bind="row.php.decompressed"></div>
+                        </td>
+                        <td ng-class="{warning: row.decompressed64!=row.php.decompressed64}">
+                            <div data-ng-bind="row.decompressed64"></div>
+                            <div data-ng-bind="row.php.decompressed64"></div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div data-ng-if="vm.activeTab == 'utf16'">
+            <div class="col-md-12">
+                <table class="table table-condensed">
+                    <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Compressed [Bytes]</th>
+                        <th>Decompressed</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr data-ng-repeat="row in vm.results16 | orderBy:'$index':true">
+                        <td data-ng-bind="row.input"></td>
+                        <td ng-class="{warning: row.compressedBytesString!=row.php.compressedBytesString}">
+                            <div data-ng-bind="row.compressedBytesString"></div>
+                            <div data-ng-bind="row.php.compressedBytesString"></div>
+                        </td>
+                        <td ng-class="{warning: row.decompressed!=row.php.decompressed}">
+                            <div data-ng-bind="row.decompressed"></div>
+                            <div data-ng-bind="row.php.decompressed"></div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

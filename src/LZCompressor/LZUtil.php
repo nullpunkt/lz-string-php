@@ -107,6 +107,4 @@ class LZUtil
     public static function utf8_strlen($str) {
         return mb_strlen($str, 'UTF-8');
     }
-
-
 }

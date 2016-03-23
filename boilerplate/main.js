@@ -5,12 +5,16 @@ angular.module('lzapp').controller('LZStringCtrl', LZStringCtrl);
 LZStringCtrl.$inject = ['$http'];
 
 function LZStringCtrl($http) {
-    var vm = this;
+    var vm = this,
+        // def = 'متن شگفت انگیز در اینجا'
+        def = ' «sauvegardes», «'
+        ;
 
-    vm.source = '';
+    vm.source = def;
     vm.displayCompressed = false;
     vm.results = [];
-
+    vm.results16 = [];
+    vm.activeTab = 'utf16';
 
     vm.encode = encode;
     vm.encodeLong = encodeLong;
@@ -18,8 +22,12 @@ function LZStringCtrl($http) {
     vm.longResult = null;
 
     function encode() {
-        vm.results.push(generate(vm.source));
-        vm.source = '';
+        if(vm.activeTab == 'utf16') {
+            vm.results16.push(generate16(vm.source));
+        } else {
+            vm.results.push(generate(vm.source));
+        }
+        vm.source = def;
     }
 
     function encodeLong() {
@@ -58,6 +66,30 @@ function LZStringCtrl($http) {
         $http.post('service.php', {str: str, com64: com64}).then(function(res) {
             result.php = res.data;
             if(angular.isDefined(result.php.compressedBytes)) {
+                result.php.compressedBytesString = bytesToHexStr(result.php.compressedBytes)
+            }
+        });
+
+        return result;
+    }
+
+    function generate16(str) {
+        var com = LZString.compressToUTF16(str), compressedBytes = bytes(com);
+        var result = {
+            input: str,
+            compressed: com,
+            compressedBytes: compressedBytes,
+            compressedBytesString: bytesToHexStr(compressedBytes),
+            decompressed: LZString.decompressFromUTF16(com),
+            php: {
+
+            }
+        };
+
+        $http.post('service16.php', {str: str}).then(function(res) {
+            result.php = res.data;
+            if(angular.isDefined(result.php.compressedBytes)) {
+                // result.php.compressedBytesString = result.php.compressedBytes;
                 result.php.compressedBytesString = bytesToHexStr(result.php.compressedBytes)
             }
         });

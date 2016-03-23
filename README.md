@@ -24,6 +24,9 @@ composer require nullpunkt/lz-string-php
 ```
 
 ## Changelog
+### 2016-03-23 
+- v1.2.0 Added utf16 functionality
+
 ### 2016-02-28 
 - v1.1.0 Completely rewritten LZString component to match the output of js-lz-string version 1.4.4
 - PHPUnit tests for continuous testing / comparision of lz-string js
