@@ -3,6 +3,55 @@ namespace LZCompressor;
 
 class LZString
 {
+    /**
+     * Compress into a string that is already URI encoded
+     *
+     * @param string $input
+     *
+     * @return string
+     */
+    public static function compressToEncodedURIComponent($input)
+    {
+        if ($input === null) {
+            return "";
+        }
+        return self::_compress(
+            $input,
+            6,
+            function($a) {
+                return LZUtil::$keyStrUriSafe{$a};
+            }
+        );
+    }
+
+    /**
+     * Decompress from an output of compressToEncodedURIComponent
+     *
+     * @param string $input
+     *
+     * @return null|string
+     */
+    public static function decompressFromEncodedURIComponent($input)
+    {
+        if ($input === null) {
+            return "";
+        }
+        if ($input === "") {
+            return null;
+        }
+
+        $input = str_replace(' ', "+", $input);
+
+        return self::_decompress(
+            $input,
+            32,
+            function($feed, $index) {
+                return LZUtil::getBaseValue(
+                    LZUtil::$keyStrUriSafe,
+                    LZUtil::utf8_charAt($feed, $index)
+                );
+            });
+    }
 
     public static function compressToBase64($input)
     {
