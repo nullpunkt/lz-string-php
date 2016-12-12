@@ -50,7 +50,7 @@ class LZUtil16
      * @param string $ch
      * @return bool|integer
      */
-    function utf16_ord($ch) {
+    public static function utf16_ord($ch) {
         $length = strlen($ch);
         if (2 === $length) {
             return hexdec(bin2hex($ch));
