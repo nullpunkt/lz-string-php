@@ -40,9 +40,13 @@ class LZUtil16
      *
      * @return bool|integer
      */
-    public static function charCodeAt($str, $num=0)
+    public static function charCodeAt($data)
     {
-        return self::utf16_ord(self::utf16_charAt($str, $num));
+        $sub = substr($data->str, $data->index, 2);
+        $sub = self::utf16_charAt($sub, 0);
+        $data->index += strlen($sub);
+        $data->end = strlen($sub) <= 0;
+        return self::utf16_ord($sub);
     }
 
     /**
