@@ -45,11 +45,12 @@ class LZString
         return self::_decompress(
             $input,
             32,
-            function($feed, $index) {
-                return LZUtil::getBaseValue(
-                    LZUtil::$keyStrUriSafe,
-                    LZUtil::utf8_charAt($feed, $index)
-                );
+            function($data) {
+                $sub = substr($data->str, $data->index, 6);
+                $sub = LZUtil::utf8_charAt($sub, 0);
+                $data->index += strlen($sub);
+                $data->end = strlen($sub) <= 0;
+                return LZUtil::getBaseValue( LZUtil::$keyStrUriSafe, $sub );
             });
     }
 
@@ -69,8 +70,12 @@ class LZString
 
     public static function decompressFromBase64($input)
     {
-        return self::_decompress($input, 32, function($feed, $index) {
-            return LZUtil::getBaseValue(LZUtil::$keyStrBase64, LZUtil::utf8_charAt($feed, $index));
+        return self::_decompress($input, 32, function($data) {
+            $sub = substr($data->str, $data->index, 6);
+            $sub = LZUtil::utf8_charAt($sub, 0);
+            $data->index += strlen($sub);
+            $data->end = strlen($sub) <= 0;
+            return LZUtil::getBaseValue(LZUtil::$keyStrBase64, $sub);
         });
     }
 
@@ -81,8 +86,8 @@ class LZString
     }
 
     public static function decompressFromUTF16($input) {
-        return self::_decompress($input, 16384, function($feed, $index) {
-            return LZUtil16::charCodeAt($feed, $index)-32;
+        return self::_decompress($input, 16384, function($data) {
+            return LZUtil16::charCodeAt($data)-32;
         });
     }
 
@@ -103,8 +108,12 @@ class LZString
      */
     public static function decompress($compressed)
     {
-        return self::_decompress($compressed, 32768, function($feed, $index) {
-            return LZUtil::charCodeAt($feed, $index);
+        return self::_decompress($compressed, 32768, function($data) {
+            $sub = substr($data->str, $data->index, 16);
+            $sub = LZUtil::utf8_charAt($sub, 0);
+            $data->index += strlen($sub);
+            $data->end = strlen($sub) <= 0;
+            return LZUtil::charCodeAt($sub, 0);
         });
     }
 
@@ -121,9 +130,15 @@ class LZString
         }
 
         $context = new LZContext();
-        $length = LZUtil::utf8_strlen($uncompressed);
-        for($ii=0; $ii<$length; $ii++) {
-            $context->c = LZUtil::utf8_charAt($uncompressed, $ii);
+        $length = 0;
+        $ii = 0;
+        do {
+            // take the context symbol in UTF-8
+            $sub = substr( $uncompressed, $ii, 6); // cover the full utf-8 character space
+            $context->c = mb_substr( $sub, 0, 1, 'UTF-8'); // fast take the character
+            $length = strlen( $context->c ); // get amount of bytes taken
+            $ii += $length; // advance the index
+            // handle the compression
             if(!$context->dictionaryContains($context->c)) {
                 $context->addToDictionary($context->c);
                 $context->dictionaryToCreate[$context->c] = true;
@@ -134,7 +149,8 @@ class LZString
             } else {
                 self::produceW($context, $bitsPerChar, $getCharFromInt);
             }
-        }
+        } while( $length > 0 );
+        
         if($context->w !== '') {
             self::produceW($context, $bitsPerChar, $getCharFromInt);
         }
@@ -232,7 +248,7 @@ class LZString
      * @param string $feed
      * @return integer
      */
-    private static function readBits(LZData $data, $resetValue, $getNextValue, $feed, $exponent)
+    private static function readBits(LZData $data, $resetValue, $getNextValue, $exponent)
     {
         $bits = 0;
         $maxPower = pow(2, $exponent);
@@ -242,7 +258,7 @@ class LZString
             $data->position >>= 1;
             if ($data->position == 0) {
                 $data->position = $resetValue;
-                $data->val = $getNextValue($feed, $data->index++);
+                $data->val = $getNextValue($data);
             }
             $bits |= (($resb>0 ? 1 : 0) * $power);
             $power <<= 1;
@@ -262,7 +278,6 @@ class LZString
             return '';
         }
 
-        $length = LZUtil::utf8_strlen($compressed);
         $entry = null;
         $enlargeIn = 4;
         $numBits = 3;
@@ -272,18 +287,19 @@ class LZString
 
         $data = new LZData();
         $data->str = $compressed;
-        $data->val = $getNextValue($compressed, 0);
+        $data->index = 0;
+        $data->end = false;
+        $data->val = $getNextValue($data);
         $data->position = $resetValue;
-        $data->index = 1;
 
-        $next = self::readBits($data, $resetValue, $getNextValue, $compressed, 2);
+        $next = self::readBits($data, $resetValue, $getNextValue, 2);
 
         if($next < 0 || $next > 1) {
             return '';
         }
 
         $exponent = ($next == 0) ? 8 : 16;
-        $bits = self::readBits($data, $resetValue, $getNextValue, $compressed, $exponent);
+        $bits = self::readBits($data, $resetValue, $getNextValue, $exponent);
 
         $c = LZUtil::fromCharCode($bits);
         $dictionary->addEntry($c);
@@ -292,22 +308,22 @@ class LZString
         $result .= $c;
 
         while(true) {
-            if($data->index > $length) {
+            if($data->end) {
                 return '';
             }
-            $bits = self::readBits($data, $resetValue, $getNextValue, $compressed, $numBits);
+            $bits = self::readBits($data, $resetValue, $getNextValue, $numBits);
 
             $c = $bits;
 
             switch($c) {
                 case 0:
-                    $bits = self::readBits($data, $resetValue, $getNextValue, $compressed, 8);
+                    $bits = self::readBits($data, $resetValue, $getNextValue, 8);
                     $c = $dictionary->size();
                     $dictionary->addEntry(LZUtil::fromCharCode($bits));
                     $enlargeIn--;
                     break;
                 case 1:
-                    $bits = self::readBits($data, $resetValue, $getNextValue, $compressed, 16);
+                    $bits = self::readBits($data, $resetValue, $getNextValue, 16);
                     $c = $dictionary->size();
                     $dictionary->addEntry(LZUtil::fromCharCode($bits));
                     $enlargeIn--;
