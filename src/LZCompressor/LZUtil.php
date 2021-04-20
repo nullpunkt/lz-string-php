@@ -40,7 +40,7 @@ class LZUtil
     public static function fromCharCode()
     {
         return array_reduce(func_get_args(), function ($a, $b) {
-            $a .= self::utf8_chr($b);
+            $a .= LZUtil::utf8_chr($b);
             return $a;
         });
     }
