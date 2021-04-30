@@ -14,11 +14,11 @@
     ],
     "description": "PHP Class implementation of LZ-String javascript.",
     "require": {
-        "php": ">=5.3.0"
+        "php": ">=5.4"
     },
     "require-dev": {
         "monolog/monolog": "^1.17",
-        "phpunit/phpunit": "~5.1"
+        "phpunit/phpunit": "~9.5"
     },
     "autoload": {
         "psr-4": {
