@@ -28,7 +28,7 @@ class LZUtil
         if(!array_key_exists($alphabet, self::$baseReverseDic)) {
             self::$baseReverseDic[$alphabet] = array();
             for($i=0; $i<strlen($alphabet); $i++) {
-                self::$baseReverseDic[$alphabet][$alphabet{$i}] = $i;
+                self::$baseReverseDic[$alphabet][$alphabet[$i]] = $i;
             }
         }
         return self::$baseReverseDic[$alphabet][$character];
@@ -79,13 +79,13 @@ class LZUtil
         if ($len <= 0) {
             return -1;
         }
-        $h = ord($ch{0});
+        $h = ord($ch[0]);
         if ($h <= 0x7F) return $h;
         if ($h < 0xC2) return -3;
-        if ($h <= 0xDF && $len > 1) return ($h & 0x1F) << 6 | (ord($ch{1}) & 0x3F);
-        if ($h <= 0xEF && $len > 2) return ($h & 0x0F) << 12 | (ord($ch{1}) & 0x3F) << 6 | (ord($ch{2}) & 0x3F);
+        if ($h <= 0xDF && $len > 1) return ($h & 0x1F) << 6 | (ord($ch[1]) & 0x3F);
+        if ($h <= 0xEF && $len > 2) return ($h & 0x0F) << 12 | (ord($ch[1]) & 0x3F) << 6 | (ord($ch[2]) & 0x3F);
         if ($h <= 0xF4 && $len > 3)
-            return ($h & 0x0F) << 18 | (ord($ch{1}) & 0x3F) << 12 | (ord($ch{2}) & 0x3F) << 6 | (ord($ch{3}) & 0x3F);
+            return ($h & 0x0F) << 18 | (ord($ch[1]) & 0x3F) << 12 | (ord($ch[2]) & 0x3F) << 6 | (ord($ch[3]) & 0x3F);
         return -2;
     }
 
