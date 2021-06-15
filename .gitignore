@@ -2,3 +2,4 @@
 .idea/
 /vendor
 boilerplate/bower_components
+.DS_Store
