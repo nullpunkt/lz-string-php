@@ -2,7 +2,7 @@
 
 use LZCompressor\LZString as LZString;
 
-class TestLZStringUTF16 extends PHPUnit_Framework_TestCase
+class TestLZStringUTF16 extends PHPUnit\Framework\TestCase
 {
     /**
      * @dataProvider simpleTextProvider

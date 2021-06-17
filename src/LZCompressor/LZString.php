@@ -19,7 +19,7 @@ class LZString
             $input,
             6,
             function($a) {
-                return LZUtil::$keyStrUriSafe{$a};
+                return LZUtil::$keyStrUriSafe[$a];
             }
         );
     }
@@ -57,7 +57,7 @@ class LZString
     public static function compressToBase64($input)
     {
         $res = self::_compress($input, 6, function($a) {
-            return LZUtil::$keyStrBase64{$a};
+            return LZUtil::$keyStrBase64[$a];
         });
         switch (strlen($res) % 4) { // To produce valid Base64
             default: // When could this happen ?
@@ -81,8 +81,8 @@ class LZString
 
     public static function compressToUTF16($input) {
         return self::_compress($input, 15, function($a) {
-            return LZUtil16::fromCharCode($a+32);
-        }) . LZUtil16::utf16_chr(32);
+                return LZUtil16::fromCharCode($a+32);
+            }) . LZUtil16::utf16_chr(32);
     }
 
     public static function decompressFromUTF16($input) {
@@ -150,7 +150,7 @@ class LZString
                 self::produceW($context, $bitsPerChar, $getCharFromInt);
             }
         } while( $length > 0 );
-        
+
         if($context->w !== '') {
             self::produceW($context, $bitsPerChar, $getCharFromInt);
         }
@@ -161,7 +161,7 @@ class LZString
             $value = $value >> 1;
         }
 
-         while (true) {
+        while (true) {
             $context->data->val = $context->data->val << 1;
             if ($context->data->position == ($bitsPerChar-1)) {
                 $context->data->append($getCharFromInt($context->data->val));
@@ -343,7 +343,7 @@ class LZString
             }
             else {
                 if ($c == $dictionary->size()) {
-                    $entry = $w . $w{0};
+                    $entry = $w . $w[0];
                 } else {
                     return null;
                 }
