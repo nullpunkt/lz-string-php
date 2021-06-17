@@ -24,7 +24,7 @@ composer require nullpunkt/lz-string-php
 
 ## Changelog
 
-### 2021-04-13
+### 2021-06-17
 - v1.3.0 Upgraded codebase to be compatible to PHP 8. [Thanks to https://github.com/jchodzicki]
 
 ### 2021-04-13
