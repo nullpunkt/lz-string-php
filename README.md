@@ -23,6 +23,10 @@ composer require nullpunkt/lz-string-php
 ```
 
 ## Changelog
+
+### 2021-04-13
+- v1.3.0 Upgraded codebase to be compatible to PHP 8. [Thanks to https://github.com/jchodzicki]
+
 ### 2021-04-13
 - v1.2.1 Fixed overhead that happens with PHP UTF-8 string indexing. The calculation complexity was raising exponentially 
   and became unusable when the compressed message was even less than 1MBytes. [Thanks to https://github.com/peetervois]
